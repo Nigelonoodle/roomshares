@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>RoomShares — Community Room Sharing</title>
+<meta name="description" content="RoomShares is a community board for listing and finding spare rooms. See real availability on a live calendar, message hosts directly — no sign-up walls. roomshares.org"/>
+<!-- Open Graph — controls how the link looks when shared on WhatsApp, Facebook, iMessage etc -->
+<meta property="og:title" content="RoomShares — Spare rooms, shared simply."/>
+<meta property="og:description" content="A community board for listing and finding spare rooms. Live availability calendar, direct messaging, no sign-up walls."/>
+<meta property="og:url" content="https://roomshares.org"/>
+<meta property="og:type" content="website"/>
+<meta name="twitter:card" content="summary"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════════════════════════════════
+   ALL STYLES ARE SCOPED UNDER #rs — safe to embed anywhere
+   ══════════════════════════════════════════════════════════════════════════════ */
+#rs {
+  --bg:#111110; --surface:#1a1a19; --surfaceHi:#222221; --border:#2e2e2d;
+  --text:#e8e4df; --textMid:#9a9590; --textLo:#5f5b57;
+  --accent:#e8a84c; --accentDim:rgba(232,168,76,.13);
+  --green:#5ecf8a; --greenDim:rgba(94,207,138,.13);
+  --serif:'Playfair Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  position:relative;
+}
+
+/* ── base resets (scoped) ── */
+#rs *               { box-sizing:border-box; margin:0; padding:0; }
+#rs button          { font-family:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+#rs input, #rs select { font-family:inherit; }
+#rs a               { text-decoration:none; color:inherit; }
+#rs ::-webkit-scrollbar       { width:6px; }
+#rs ::-webkit-scrollbar-track { background:transparent; }
+#rs ::-webkit-scrollbar-thumb { background:#3a3a39; border-radius:3px; }
+#rs input::placeholder        { color:var(--textLo); }
+#rs select option             { background:var(--surfaceHi); color:var(--text); }
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   LANDING PAGE
+   ══════════════════════════════════════════════════════════════════════════════ */
+#rs .landing {
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+
+/* grain overlay for atmosphere */
+#rs .landing::before {
+  content:'';
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
+  opacity:.6;
+}
+
+/* subtle warm gradient mesh at top */
+#rs .landing-glow {
+  position:absolute; top:-180px; left:50%; transform:translateX(-50%);
+  width:900px; height:500px;
+  background:radial-gradient(ellipse at center, rgba(232,168,76,.08) 0%, transparent 70%);
+  pointer-events:none; z-index:0;
+}
+
+#rs .landing-inner {
+  position:relative; z-index:2;
+  flex:1; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:60px 24px;
+}
+
+/* logo row */
+#rs .landing-logo {
+  display:flex; align-items:center; gap:14px; margin-bottom:48px;
+}
+#rs .landing-logo-icon {
+  width:52px; height:52px; border-radius:16px;
+  background:linear-gradient(135deg,var(--accent),#d4956a);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px;
+  box-shadow:0 8px 32px rgba(232,168,76,.25);
+}
+#rs .landing-logo-text {
+  font-family:var(--serif); font-size:32px; font-weight:700;
+  letter-spacing:-1px;
+}
+
+/* headline */
+#rs .landing-headline {
+  font-family:var(--serif);
+  font-size:clamp(36px,6vw,58px);
+  font-weight:700; line-height:1.1;
+  letter-spacing:-1.5px;
+  max-width:680px;
+}
+#rs .landing-headline em {
+  font-style:italic; color:var(--accent);
+}
+#rs .landing-sub {
+  color:var(--textMid); font-size:17px; line-height:1.6;
+  max-width:520px; margin-top:20px;
+}
+
+/* feature pills row */
+#rs .landing-features {
+  display:flex; gap:12px; flex-wrap:wrap; justify-content:center;
+  margin-top:36px;
+}
+#rs .landing-feature {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 18px; border-radius:24px;
+  border:1px solid var(--border);
+  background:var(--surface); color:var(--textMid);
+  font-size:13px; font-weight:600;
+  transition:border-color .25s;
+}
+#rs .landing-feature:hover { border-color:var(--accent); color:var(--text); }
+#rs .landing-feature .feat-icon { font-size:15px; }
+
+/* CTA button */
+#rs .landing-cta {
+  margin-top:44px;
+  display:inline-flex; align-items:center; gap:10px;
+  padding:16px 38px; border-radius:14px;
+  background:var(--accent); color:#111;
+  font-size:16px; font-weight:700;
+  box-shadow:0 6px 28px rgba(232,168,76,.3);
+  transition:transform .2s, box-shadow .2s;
+}
+#rs .landing-cta:hover {
+  transform:translateY(-2px);
+  box-shadow:0 10px 36px rgba(232,168,76,.4);
+}
+#rs .landing-cta .cta-arrow { font-size:20px; transition:transform .25s; }
+#rs .landing-cta:hover .cta-arrow { transform:translateX(4px); }
+
+/* bottom note */
+#rs .landing-note {
+  position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
+  z-index:2; color:var(--textLo); font-size:12px;
+  display:flex; align-items:center; gap:8px;
+}
+#rs .landing-note .dot {
+  width:6px; height:6px; border-radius:50%; background:var(--green);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100%{ opacity:1; }
+  50%     { opacity:.35; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   APP SHELL (hidden until landing CTA clicked)
+   ══════════════════════════════════════════════════════════════════════════════ */
+#rs .app { display:none; min-height:100vh; }
+#rs .app.visible { display:flex; }
+
+#rs .sidebar {
+  width:220px; flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh;
+}
+#rs .sidebar-logo {
+  padding:26px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px;
+}
+#rs .sidebar-logo-icon {
+  width:38px; height:38px; border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),#d4956a);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+#rs .sidebar-logo-text  { font-family:var(--serif); font-size:19px; font-weight:700; letter-spacing:-.5px; }
+#rs .sidebar-logo-sub   { font-size:9px; text-transform:uppercase; letter-spacing:1.2px; color:var(--textLo); font-weight:600; margin-top:1px; }
+
+#rs .sidebar-nav        { padding:18px 10px; flex:1; }
+#rs .nav-btn {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:10px 13px; border-radius:10px;
+  background:transparent; color:var(--textMid);
+  font-size:14px; font-weight:500; margin-bottom:2px;
+  transition:background .2s, color .2s;
+}
+#rs .nav-btn:hover        { background:var(--surfaceHi); opacity:1; }
+#rs .nav-btn.active       { background:var(--accentDim); color:var(--accent); font-weight:700; }
+#rs .nav-btn .nav-icon    { width:20px; text-align:center; font-size:15px; }
+#rs .sidebar-footer {
+  padding:16px 20px; border-top:1px solid var(--border);
+  font-size:11px; color:var(--textLo); line-height:1.55;
+}
+#rs .sidebar-footer .hl   { color:var(--accent); }
+
+/* main scroll area */
+#rs .main { flex:1; overflow-y:auto; min-height:100vh; }
+#rs .page { display:none; padding:36px 40px; max-width:960px; }
+#rs .page.active { display:block; }
+
+/* ── shared components ── */
+#rs .page-title { font-family:var(--serif); font-size:32px; font-weight:700; letter-spacing:-1px; line-height:1.15; }
+#rs .page-title .hl { color:var(--accent); }
+#rs .page-sub { color:var(--textMid); font-size:14px; margin-top:6px; }
+
+#rs .pills { display:flex; gap:8px; flex-wrap:wrap; margin-top:20px; }
+#rs .pill {
+  padding:6px 16px; border-radius:20px;
+  border:1px solid var(--border); background:transparent;
+  color:var(--textMid); font-size:12px; font-weight:600;
+  transition:all .2s;
+}
+#rs .pill:hover         { border-color:var(--accent); color:var(--accent); opacity:1; }
+#rs .pill.active        { border-color:transparent; background:var(--accentDim); color:var(--accent); }
+
+#rs .btn-accent {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:8px 20px; border-radius:9px;
+  background:var(--accent); color:#111;
+  font-size:13px; font-weight:700;
+  transition:opacity .2s;
+}
+#rs .btn-accent:hover   { opacity:.82; }
+#rs .btn-ghost {
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:8px 18px; border-radius:9px;
+  border:1px solid var(--border); background:transparent;
+  color:var(--textMid); font-size:13px; font-weight:600;
+  transition:opacity .2s;
+}
+#rs .btn-ghost:hover    { opacity:.72; }
+#rs .btn-back { color:var(--accent); font-size:14px; font-weight:700; margin-bottom:20px; display:inline-flex; align-items:center; gap:6px; transition:opacity .2s; }
+#rs .btn-back:hover     { opacity:.7; }
+
+#rs .tag {
+  display:inline-block; padding:5px 14px; border-radius:14px;
+  background:var(--surfaceHi); border:1px solid var(--border);
+  color:var(--textMid); font-size:13px; font-weight:600;
+}
+#rs .tag-green  { background:var(--greenDim); border-color:transparent; color:var(--green); font-weight:700; }
+#rs .tag-avail  { font-size:11px; padding:3px 10px; border-radius:12px; background:var(--greenDim); color:var(--green); font-weight:700; }
+#rs .section-label { color:var(--accent); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.2px; margin-bottom:14px; }
+#rs .divider { border-top:1px solid var(--border); margin:22px 0; }
+
+/* ── community cards ── */
+#rs .cards { margin-top:26px; display:flex; flex-direction:column; gap:14px; }
+#rs .card {
+  background:var(--surface); border-radius:14px;
+  border:1px solid var(--border); display:flex;
+  overflow:hidden; transition:border-color .25s;
+  cursor:pointer;
+}
+#rs .card:hover           { border-color:var(--accent); }
+#rs .card-stripe          { width:96px; min-height:144px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+#rs .card-avatar          { width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:17px; }
+#rs .card-body            { flex:1; padding:18px 20px; display:flex; flex-direction:column; justify-content:center; }
+#rs .card-header          { display:flex; justify-content:space-between; align-items:flex-start; }
+#rs .card-title           { font-size:16px; font-weight:700; letter-spacing:-.3px; }
+#rs .card-host            { color:var(--textMid); font-size:13px; margin-top:2px; }
+#rs .card-meta            { display:flex; gap:16px; margin-top:10px; font-size:13px; color:var(--textMid); flex-wrap:wrap; }
+#rs .card-meta .sep       { color:var(--textLo); }
+#rs .card-meta .lo        { color:var(--textLo); }
+#rs .card-actions         { display:flex; gap:8px; margin-top:13px; }
+
+/* ── calendar ── */
+#rs .calendar-layout      { display:flex; gap:30px; }
+#rs .calendar-left        { flex:1; min-width:0; }
+#rs .calendar-right       { width:280px; flex-shrink:0; }
+#rs .cal-box              { margin-top:22px; background:var(--surface); border-radius:18px; border:1px solid var(--border); overflow:hidden; }
+#rs .cal-nav              { display:flex; align-items:center; justify-content:space-between; padding:18px 22px 8px; }
+#rs .cal-nav-btn          { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:transparent; color:var(--textMid); font-size:18px; display:flex; align-items:center; justify-content:center; transition:opacity .2s; }
+#rs .cal-nav-btn:hover    { opacity:.7; }
+#rs .cal-month            { font-family:var(--serif); font-size:19px; font-weight:700; }
+#rs .cal-dayheaders       { display:grid; grid-template-columns:repeat(7,1fr); padding:0 14px; margin-bottom:2px; }
+#rs .cal-dayheader        { text-align:center; font-size:11px; color:var(--textLo); font-weight:700; letter-spacing:.6px; padding:6px 0; text-transform:uppercase; }
+#rs .cal-grid             { display:grid; grid-template-columns:repeat(7,1fr); padding:0 14px 18px; gap:3px; }
+#rs .cal-cell {
+  aspect-ratio:1; border-radius:9px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:13px; font-weight:400; color:var(--textLo);
+  background:transparent; border:2px solid transparent;
+  transition:background .18s; user-select:none;
+}
+#rs .cal-cell.has-avail   { background:var(--greenDim); color:var(--green); font-weight:700; cursor:pointer; }
+#rs .cal-cell.has-avail:hover { background:var(--accentDim); }
+#rs .cal-cell.selected    { background:var(--accent)!important; color:#111!important; font-weight:800; }
+#rs .cal-cell.today       { border-color:var(--textLo); }
+#rs .cal-dot              { width:4px; height:4px; border-radius:50%; background:var(--green); margin-top:2px; }
+#rs .cal-legend           { display:flex; gap:18px; padding:12px 22px; border-top:1px solid var(--border); font-size:12px; color:var(--textMid); }
+#rs .cal-legend-swatch    { width:11px; height:11px; border-radius:4px; display:inline-block; margin-right:5px; vertical-align:middle; }
+
+#rs .day-panel            { margin-top:80px; background:var(--surface); border-radius:18px; border:1px solid var(--border); padding:22px; min-height:300px; }
+#rs .day-panel-empty      { text-align:center; padding-top:70px; color:var(--textLo); }
+#rs .day-panel-empty .icon  { font-size:34px; margin-bottom:12px; }
+#rs .day-panel-empty .title { font-size:15px; font-weight:600; color:var(--textMid); }
+#rs .day-panel-empty .sub   { font-size:13px; margin-top:4px; }
+#rs .day-panel-date       { font-size:16px; font-weight:700; }
+#rs .day-panel-count      { color:var(--textMid); font-size:13px; margin-top:4px; margin-bottom:18px; }
+#rs .day-result           { background:var(--surfaceHi); border-radius:11px; padding:13px; margin-bottom:9px; cursor:pointer; border:1px solid var(--border); transition:border-color .2s; }
+#rs .day-result:hover     { border-color:var(--accent); }
+#rs .day-result .dr-title { font-size:15px; font-weight:700; }
+#rs .day-result .dr-sub   { color:var(--textMid); font-size:12px; margin-top:3px; }
+#rs .day-result .dr-link  { color:var(--accent); font-size:12px; font-weight:700; margin-top:5px; }
+
+/* ── listing detail ── */
+#rs .listing-hero {
+  border-radius:16px 16px 0 0; padding:44px 26px 26px;
+  border:1px solid var(--border); border-bottom:none;
+  display:flex; align-items:flex-end; gap:16px;
+}
+#rs .listing-hero-avatar  { width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:21px; flex-shrink:0; }
+#rs .listing-hero-title   { font-family:var(--serif); font-size:26px; font-weight:700; letter-spacing:-.8px; }
+#rs .listing-hero-sub     { color:var(--textMid); font-size:14px; margin-top:2px; }
+#rs .listing-body {
+  background:var(--surface); border-radius:0 0 16px 16px;
+  border:1px solid var(--border); border-top:none; padding:26px;
+}
+#rs .listing-bio          { color:var(--textMid); font-size:14px; line-height:1.7; margin-bottom:22px; }
+#rs .stats-row            { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:22px; }
+#rs .stat-box             { background:var(--surfaceHi); border-radius:11px; padding:14px; text-align:center; border:1px solid var(--border); }
+#rs .stat-val             { color:var(--accent); font-size:24px; font-weight:800; }
+#rs .stat-label           { color:var(--textLo); font-size:12px; margin-top:2px; font-weight:600; }
+#rs .section-title-sm     { color:var(--text); font-size:12px; font-weight:700; margin-bottom:9px; text-transform:uppercase; letter-spacing:.8px; }
+#rs .tags-row             { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:20px; }
+#rs .contact-box          { background:var(--surfaceHi); border-radius:12px; padding:16px 18px; border:1px solid var(--border); margin-bottom:22px; }
+#rs .contact-box .cb-title{ font-size:13px; font-weight:700; margin-bottom:8px; }
+#rs .contact-box .cb-line { color:var(--textMid); font-size:14px; margin-bottom:4px; }
+
+/* ── list room form ── */
+#rs .form-card            { margin-top:26px; background:var(--surface); border-radius:16px; border:1px solid var(--border); padding:26px; max-width:540px; }
+#rs .form-field           { margin-bottom:16px; }
+#rs .form-label           { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
+#rs .form-input {
+  width:100%; padding:10px 13px; border-radius:9px;
+  border:1px solid var(--border); background:var(--surfaceHi);
+  color:var(--text); font-size:14px; outline:none;
+  transition:border-color .2s;
+}
+#rs .form-input:focus     { border-color:var(--accent); }
+#rs .form-row             { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+#rs .amenity-pills        { display:flex; flex-wrap:wrap; gap:7px; }
+#rs .amenity-pill {
+  padding:6px 14px; border-radius:18px;
+  border:1px solid var(--border); background:transparent;
+  color:var(--textMid); font-size:13px; font-weight:600;
+  transition:all .2s;
+}
+#rs .amenity-pill:hover   { border-color:var(--green); color:var(--green); opacity:1; }
+#rs .amenity-pill.on      { border-color:var(--green); background:var(--greenDim); color:var(--green); }
+#rs .btn-submit {
+  width:100%; padding:13px 0; border-radius:10px;
+  background:var(--accent); color:#111;
+  font-size:15px; font-weight:700; margin-top:6px;
+  transition:opacity .2s;
+}
+#rs .btn-submit:disabled  { opacity:.38; cursor:default; }
+
+/* success */
+#rs .success-box          { background:var(--surface); border-radius:16px; border:1px solid var(--border); padding:56px 36px; text-align:center; max-width:540px; margin-top:26px; }
+#rs .success-icon         { width:68px; height:68px; border-radius:50%; background:var(--greenDim); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; font-size:30px; }
+#rs .success-title        { font-family:var(--serif); font-size:22px; font-weight:700; margin-bottom:8px; }
+#rs .success-sub          { color:var(--textMid); font-size:14px; line-height:1.6; max-width:300px; margin:0 auto 24px; }
+
+/* ── messaging modal ── */
+#rs .modal-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.5); z-index:9999;
+  display:flex; align-items:flex-end; justify-content:center;
+  opacity:0; pointer-events:none; transition:opacity .25s;
+}
+#rs .modal-overlay.open   { opacity:1; pointer-events:auto; }
+#rs .msg-panel {
+  background:var(--surface); width:100%; max-width:440px;
+  border-radius:18px 18px 0 0; height:420px;
+  display:flex; flex-direction:column;
+  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+  border:1px solid var(--border); border-bottom:none;
+  transform:translateY(18px);
+  transition:transform .3s cubic-bezier(.22,1,.36,1);
+}
+#rs .modal-overlay.open .msg-panel { transform:translateY(0); }
+#rs .msg-header           { display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-bottom:1px solid var(--border); }
+#rs .msg-header-left      { display:flex; align-items:center; gap:10px; }
+#rs .msg-avatar           { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:13px; }
+#rs .msg-name             { font-size:14px; font-weight:700; }
+#rs .msg-loc              { font-size:11px; color:var(--textLo); }
+#rs .msg-close            { font-size:22px; color:var(--textLo); transition:opacity .2s; }
+#rs .msg-close:hover      { opacity:.6; }
+#rs .msg-list             { flex:1; overflow-y:auto; padding:16px 18px; display:flex; flex-direction:column; gap:9px; }
+#rs .msg-empty            { text-align:center; color:var(--textLo); font-size:13px; margin-top:44px; }
+#rs .msg-bubble-wrap      { display:flex; flex-direction:column; }
+#rs .msg-bubble-wrap.you  { align-items:flex-end; }
+#rs .msg-bubble           { padding:9px 14px; border-radius:15px 15px 15px 4px; max-width:80%; font-size:14px; line-height:1.45; background:var(--surfaceHi); color:var(--text); border:1px solid var(--border); }
+#rs .msg-bubble-wrap.you .msg-bubble { border-radius:15px 15px 4px 15px; background:var(--accent); color:#111; border:none; }
+#rs .msg-time             { font-size:10px; color:var(--textLo); margin-top:3px; }
+#rs .msg-input-row        { display:flex; gap:9px; padding:12px 16px 16px; border-top:1px solid var(--border); }
+#rs .msg-input {
+  flex:1; padding:9px 15px; border-radius:21px;
+  border:1px solid var(--border); background:var(--surfaceHi);
+  color:var(--text); font-size:14px; outline:none;
+}
+#rs .msg-input:focus      { border-color:var(--accent); }
+#rs .msg-send             { width:42px; height:42px; border-radius:50%; background:var(--accent); color:#111; font-size:17px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:opacity .2s; }
+#rs .msg-send:hover       { opacity:.78; }
+
+/* ── reveal animation ── */
+#rs .reveal               { opacity:0; transform:translateY(14px); transition:opacity .5s cubic-bezier(.22,1,.36,1),transform .5s cubic-bezier(.22,1,.36,1); }
+#rs .reveal.visible       { opacity:1; transform:translateY(0); }
+
+/* ── landing staggered reveals ── */
+#rs .land-r               { opacity:0; transform:translateY(22px); transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1); }
+#rs .land-r.visible       { opacity:1; transform:translateY(0); }
+
+/* ── responsive ── */
+@media(max-width:860px){
+  #rs .sidebar            { width:64px; }
+  #rs .sidebar-logo-text,
+  #rs .sidebar-logo-sub,
+  #rs .nav-btn span:last-child,
+  #rs .sidebar-footer     { display:none; }
+  #rs .sidebar-logo       { justify-content:center; padding:24px 0; }
+  #rs .nav-btn            { justify-content:center; padding:12px; }
+  #rs .page               { padding:28px 18px; }
+  #rs .calendar-layout    { flex-direction:column; }
+  #rs .calendar-right     { width:100%; }
+  #rs .day-panel          { margin-top:0; }
+}
+@media(max-width:580px){
+  #rs .card               { flex-direction:column; }
+  #rs .card-stripe        { width:100%; min-height:80px; }
+  #rs .stats-row          { grid-template-columns:1fr 1fr; }
+  #rs .form-row           { grid-template-columns:1fr; }
+  #rs .landing-headline   { font-size:32px; }
+}
+</style>
+</head>
+<body>
+<!-- ══════════════════════════════════════════════════════════════════════════
+     EVERYTHING LIVES INSIDE #rs — safe to embed in Squarespace or anywhere
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div id="rs">
+
+  <!-- ── LANDING PAGE ── -->
+  <div class="landing" id="landing">
+    <div class="landing-glow"></div>
+    <div class="landing-inner">
+
+      <div class="landing-logo land-r" style="transition-delay:.05s">
+        <div class="landing-logo-icon">🏡</div>
+        <div class="landing-logo-text">RoomShares</div>
+      </div>
+
+      <h1 class="landing-headline land-r" style="transition-delay:.15s">
+        Spare rooms,<br><em>shared simply.</em>
+      </h1>
+      <p class="landing-sub land-r" style="transition-delay:.28s">
+        A community board for listing and finding spare rooms. See real availability on a live calendar — no apps to download, no sign-up walls.
+      </p>
+
+      <div class="landing-features land-r" style="transition-delay:.4s">
+        <div class="landing-feature"><span class="feat-icon">📅</span> Live Calendar</div>
+        <div class="landing-feature"><span class="feat-icon">💬</span> Direct Messaging</div>
+        <div class="landing-feature"><span class="feat-icon">📍</span> Local & Community</div>
+        <div class="landing-feature"><span class="feat-icon">🔗</span> Shareable Links</div>
+      </div>
+
+      <button class="landing-cta land-r" id="cta-enter" style="transition-delay:.55s">
+        Browse Rooms <span class="cta-arrow">→</span>
+      </button>
+    </div>
+
+    <div class="landing-note">
+      <span class="dot"></span> 4 rooms available now in Sydney
+    </div>
+  </div>
+
+  <!-- ── APP ── -->
+  <div class="app" id="app">
+    <!-- sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">🏡</div>
+        <div>
+          <div class="sidebar-logo-text">RoomShares</div>
+          <div class="sidebar-logo-sub">Community</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-page="community"><span class="nav-icon">⌂</span><span>Community</span></button>
+        <button class="nav-btn"        data-page="calendar" ><span class="nav-icon">◻</span><span>Calendar</span></button>
+        <button class="nav-btn"        data-page="listroom" ><span class="nav-icon">+</span><span>List Room</span></button>
+      </nav>
+      <div class="sidebar-footer">Share a <span class="hl">community link</span> so others can browse.</div>
+    </aside>
+
+    <!-- main -->
+    <main class="main">
+      <!-- COMMUNITY -->
+      <section class="page active" id="page-community">
+        <div class="reveal"><h1 class="page-title">Available <span class="hl">Rooms</span></h1><p class="page-sub">Browse what's available in your community right now</p></div>
+        <div class="pills reveal" id="community-pills"></div>
+        <div class="cards reveal" id="community-cards"></div>
+      </section>
+
+      <!-- CALENDAR -->
+      <section class="page" id="page-calendar">
+        <div class="calendar-layout">
+          <div class="calendar-left">
+            <div class="reveal"><h1 class="page-title"><span class="hl">Availability</span> Calendar</h1><p class="page-sub">Tap a highlighted date to see what's free</p></div>
+            <div class="pills reveal" id="cal-host-pills"></div>
+            <div class="cal-box reveal">
+              <div class="cal-nav"><button class="cal-nav-btn" id="cal-prev">‹</button><span class="cal-month" id="cal-month-label"></span><button class="cal-nav-btn" id="cal-next">›</button></div>
+              <div class="cal-dayheaders" id="cal-dayheaders"></div>
+              <div class="cal-grid" id="cal-grid"></div>
+              <div class="cal-legend"><span><span class="cal-legend-swatch" style="background:var(--greenDim)"></span>Available</span><span><span class="cal-legend-swatch" style="background:var(--accent)"></span>Selected</span></div>
+            </div>
+          </div>
+          <div class="calendar-right">
+            <div class="day-panel reveal" id="day-panel">
+              <div class="day-panel-empty" id="day-panel-empty"><div class="icon">📅</div><div class="title">Pick a date</div><div class="sub">Green dates have rooms available</div></div>
+              <div id="day-panel-content" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LISTING -->
+      <section class="page" id="page-listing">
+        <button class="btn-back" id="listing-back">← Back to Community</button>
+        <div class="reveal" id="listing-hero-wrap"></div>
+        <div class="reveal" id="listing-body-wrap"></div>
+      </section>
+
+      <!-- LIST ROOM -->
+      <section class="page" id="page-listroom">
+        <div class="reveal"><h1 class="page-title">List Your <span class="hl">Room</span></h1><p class="page-sub">Share your spare space with the community</p></div>
+        <div id="listroom-success" style="display:none">
+          <div class="success-box">
+            <div class="success-icon">✅</div>
+            <div class="success-title">Room Listed!</div>
+            <p class="success-sub">Your room is now visible to the community. People can find it in listings and on the calendar.</p>
+            <button class="btn-accent" id="success-back" style="padding:11px 30px;font-size:14px;">Back to Community</button>
+          </div>
+        </div>
+        <div class="form-card reveal" id="listroom-form">
+          <div class="section-label">Your Details</div>
+          <div class="form-field"><label class="form-label">Your Name</label><input class="form-input" id="f-name" placeholder="e.g. Sarah Chen"/></div>
+          <div class="form-field"><label class="form-label">Location</label><input class="form-input" id="f-location" placeholder="e.g. Surry Hills, Sydney"/></div>
+          <div class="form-field"><label class="form-label">About your place <span style="color:var(--textLo);font-weight:400">(optional)</span></label><input class="form-input" id="f-bio" placeholder="A short description…"/></div>
+          <div class="divider"></div>
+          <div class="section-label">Room Details</div>
+          <div class="form-field"><label class="form-label">Room Title</label><input class="form-input" id="f-title" placeholder="e.g. Sunny Spare Room"/></div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Beds</label><select class="form-input" id="f-beds"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+            <div class="form-field"><label class="form-label">Max Guests</label><select class="form-input" id="f-guests"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select></div>
+          </div>
+          <div class="form-field"><label class="form-label">Amenities</label><div class="amenity-pills" id="amenity-pills"></div></div>
+          <div class="divider"></div>
+          <div class="section-label">Availability</div>
+          <div class="form-row">
+            <div class="form-field"><label class="form-label">Available From</label><input class="form-input" type="date" id="f-from"/></div>
+            <div class="form-field"><label class="form-label">Available To</label><input class="form-input" type="date" id="f-to"/></div>
+          </div>
+          <button class="btn-submit" id="btn-list-room" disabled>List My Room</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ── MESSAGING MODAL ── -->
+  <div class="modal-overlay" id="msg-overlay">
+    <div class="msg-panel">
+      <div class="msg-header">
+        <div class="msg-header-left"><div class="msg-avatar" id="msg-avatar"></div><div><div class="msg-name" id="msg-name"></div><div class="msg-loc" id="msg-loc"></div></div></div>
+        <button class="msg-close" id="msg-close">×</button>
+      </div>
+      <div class="msg-list" id="msg-list"></div>
+      <div class="msg-input-row"><input class="msg-input" id="msg-input" placeholder="Type a message…"/><button class="msg-send" id="msg-send">→</button></div>
+    </div>
+  </div>
+
+</div><!-- end #rs -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT — fully self-contained, no globals leaked
+     ══════════════════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+"use strict";
+
+/* ─── DATA ─── */
+const HOSTS=[
+  {id:1,name:"Sarah Chen",initials:"SC",location:"Surry Hills",suburb:"Sydney",bio:"Quiet neighbourhood, five minutes walk to the train. Lovely morning light. I travel often so the place is yours to enjoy.",contact:{email:"sarah.chen@email.com",phone:"0412 345 678"},color:"#d4956a",rooms:[{id:101,title:"Sunny Spare Room",beds:1,maxGuests:2,amenities:["WiFi","Laundry","Kitchen","Quiet"],available:[{from:"2026-02-05",to:"2026-02-12"},{from:"2026-02-18",to:"2026-02-28"}]}]},
+  {id:2,name:"James Okafor",initials:"JO",location:"Newtown",suburb:"Sydney",bio:"Dog-friendly with a big backyard. Very relaxed vibe — come as you are. Close to all the best cafes on King St.",contact:{email:"james.o@email.com",phone:"0487 123 456"},color:"#6a9fd4",rooms:[{id:201,title:"The Garden Room",beds:1,maxGuests:2,amenities:["WiFi","Garden","Parking","Dog-Friendly"],available:[{from:"2026-02-03",to:"2026-02-08"},{from:"2026-02-20",to:"2026-03-05"}]}]},
+  {id:3,name:"Mia Rossi",initials:"MR",location:"Bondi Beach",suburb:"Sydney",bio:"Steps from the sand. Best suited for a quick coastal getaway. Balcony with a view that'll make your morning coffee feel like a ritual.",contact:{email:"mia.rossi@email.com",phone:"0499 876 543"},color:"#d46a6a",rooms:[{id:301,title:"Beach Loft",beds:2,maxGuests:3,amenities:["WiFi","Balcony","Kitchen","Beach Access"],available:[{from:"2026-02-10",to:"2026-02-15"},{from:"2026-02-22",to:"2026-02-27"}]}]},
+  {id:4,name:"Tom & Alex",initials:"TA",location:"Glebe",suburb:"Sydney",bio:"Inner-west charm. Sunday markets are literally two minutes away. Great for someone who wants to feel like a local.",contact:{email:"tom.alex@email.com",phone:"0455 222 333"},color:"#6ad49f",rooms:[{id:401,title:"Inner-West Flat",beds:1,maxGuests:1,amenities:["WiFi","Kitchen","Public Transport","Quiet"],available:[{from:"2026-02-06",to:"2026-02-11"},{from:"2026-02-25",to:"2026-03-02"}]}]}
+];
+const AMENITY_OPTIONS=["WiFi","Kitchen","Laundry","Parking","Garden","Balcony","Public Transport","Beach Access","Quiet","Dog-Friendly"];
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS=["Su","Mo","Tu","We","Th","Fr","Sa"];
+
+/* ─── STATE ─── */
+let amenityFilter=null, calY, calM, calDay=null, calHostFilter=null;
+let selectedHost=null, selectedRoom=null;
+let msgHostId=null, messages={}, selectedAmenities=[];
+
+/* ─── UTILS ─── */
+const $ = id => document.getElementById(id);
+function daysIn(y,m){return new Date(y,m+1,0).getDate();}
+function firstDay(y,m){return new Date(y,m,1).getDay();}
+function inRange(y,m,d,ranges){
+  const ts=new Date(y,m,d).getTime();
+  return ranges.some(r=>{
+    const[fy,fm,fd]=r.from.split("-").map(Number);
+    const[ty,tm,td]=r.to.split("-").map(Number);
+    return ts>=new Date(fy,fm-1,fd).getTime()&&ts<=new Date(ty,tm-1,td).getTime();
+  });
+}
+function fmtRange(from,to){
+  const o={day:"numeric",month:"short"};
+  return new Date(from+"T12:00:00").toLocaleDateString("en-AU",o)+" – "+new Date(to+"T12:00:00").toLocaleDateString("en-AU",o);
+}
+function availOnDay(d){
+  const res=[];
+  HOSTS.forEach(h=>{
+    if(calHostFilter&&h.id!==calHostFilter)return;
+    h.rooms.forEach(r=>{if(inRange(calY,calM,d,r.available))res.push({host:h,room:r});});
+  });
+  return res;
+}
+function allAmenities(){const s=new Set();HOSTS.forEach(h=>h.rooms.forEach(r=>r.amenities.forEach(a=>s.add(a))));return[...s].sort();}
+
+/* ─── REVEAL ─── */
+function triggerReveals(container){
+  container.querySelectorAll(".reveal").forEach((el,i)=>{
+    el.classList.remove("visible");
+    void el.offsetWidth;
+    setTimeout(()=>el.classList.add("visible"),50+i*65);
+  });
+}
+
+/* ─── LANDING → APP TRANSITION ─── */
+$("cta-enter").addEventListener("click",()=>{
+  $("landing").style.display="none";
+  $("app").classList.add("visible");
+  showPage("community");
+});
+
+// trigger landing reveals on load
+window.addEventListener("load",()=>{
+  document.querySelectorAll(".land-r").forEach((el,i)=>{
+    setTimeout(()=>el.classList.add("visible"), 120+i*130);
+  });
+});
+
+/* ─── NAVIGATION ─── */
+function showPage(id){
+  document.querySelectorAll("#rs .page").forEach(p=>p.classList.remove("active"));
+  document.querySelectorAll("#rs .nav-btn").forEach(b=>b.classList.remove("active"));
+  const pg=$("page-"+id);
+  if(pg){pg.classList.add("active");triggerReveals(pg);}
+  const btn=document.querySelector(`#rs .nav-btn[data-page="${id}"]`);
+  if(btn)btn.classList.add("active");
+  if(id==="listroom"){$("listroom-success").style.display="none";$("listroom-form").style.display="block";}
+  // scroll main to top
+  const main=document.querySelector("#rs .main");
+  if(main)main.scrollTop=0;
+}
+document.querySelectorAll("#rs .nav-btn").forEach(btn=>btn.addEventListener("click",()=>showPage(btn.dataset.page)));
+
+/* ─── COMMUNITY ─── */
+function buildCommunityPills(){
+  const c=$("community-pills"),ams=allAmenities();
+  let h=`<button class="pill active" data-filter="__all">All</button>`;
+  ams.forEach(a=>h+=`<button class="pill" data-filter="${a}">${a}</button>`);
+  c.innerHTML=h;
+  c.querySelectorAll(".pill").forEach(pill=>pill.addEventListener("click",()=>{
+    c.querySelectorAll(".pill").forEach(p=>p.classList.remove("active"));
+    pill.classList.add("active");
+    amenityFilter=pill.dataset.filter==="__all"?null:pill.dataset.filter;
+    renderCards();
+  }));
+}
+function renderCards(){
+  const c=$("community-cards");
+  let hosts=HOSTS;
+  if(amenityFilter)hosts=hosts.filter(h=>h.rooms.some(r=>r.amenities.includes(amenityFilter)));
+  let html="";
+  hosts.forEach(h=>h.rooms.forEach(r=>{
+    html+=`<div class="card" data-host="${h.id}" data-room="${r.id}">
+      <div class="card-stripe" style="background:linear-gradient(160deg,${h.color}55,${h.color}22)">
+        <div class="card-avatar" style="background:${h.color};box-shadow:0 4px 12px ${h.color}55">${h.initials}</div>
+      </div>
+      <div class="card-body">
+        <div class="card-header">
+          <div><div class="card-title">${r.title}</div><div class="card-host">${h.name} · ${h.location}, ${h.suburb}</div></div>
+          <span class="tag-avail">Available</span>
+        </div>
+        <div class="card-meta">
+          <span>🛏&nbsp; ${r.beds} bed${r.beds>1?"s":""}</span>
+          <span>👥&nbsp; Up to ${r.maxGuests}</span>
+          <span class="sep">|</span>
+          ${r.amenities.slice(0,3).map(a=>`<span class="lo">${a}</span>`).join("")}
+          ${r.amenities.length>3?`<span class="lo">+${r.amenities.length-3}</span>`:""}
+        </div>
+        <div class="card-actions">
+          <button class="btn-accent btn-view" data-host="${h.id}" data-room="${r.id}">View Details</button>
+          <button class="btn-ghost  btn-msg"  data-host="${h.id}">💬 Message</button>
+        </div>
+      </div>
+    </div>`;
+  }));
+  c.innerHTML=html;
+  c.querySelectorAll(".card").forEach(card=>card.addEventListener("click",e=>{
+    if(e.target.closest(".btn-msg"))return;
+    openListing(+card.dataset.host,+card.dataset.room);
+  }));
+  c.querySelectorAll(".btn-view").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();openListing(+btn.dataset.host,+btn.dataset.room);}));
+  c.querySelectorAll(".btn-msg").forEach(btn=>btn.addEventListener("click",e=>{e.stopPropagation();openMessaging(+btn.dataset.host);}));
+}
+
+/* ─── LISTING ─── */
+function openListing(hostId,roomId){
+  selectedHost=HOSTS.find(h=>h.id===hostId);
+  selectedRoom=selectedHost.rooms.find(r=>r.id===roomId);
+  if(!selectedHost||!selectedRoom)return;
+  const h=selectedHost, r=selectedRoom;
+  $("listing-hero-wrap").innerHTML=`
+    <div class="listing-hero" style="background:linear-gradient(150deg,${h.color}40,${h.color}15)">
+      <div class="listing-hero-avatar" style="background:${h.color};box-shadow:0 6px 18px ${h.color}55">${h.initials}</div>
+      <div><div class="listing-hero-title">${r.title}</div><div class="listing-hero-sub">Hosted by ${h.name} · ${h.location}, ${h.suburb}</div></div>
+    </div>`;
+  $("listing-body-wrap").innerHTML=`
+    <div class="listing-body">
+      <p class="listing-bio">${h.bio}</p>
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-val">${r.beds}</div><div class="stat-label">Beds</div></div>
+        <div class="stat-box"><div class="stat-val">${r.maxGuests}</div><div class="stat-label">Max Guests</div></div>
+        <div class="stat-box"><div class="stat-val">${r.amenities.length}</div><div class="stat-label">Amenities</div></div>
+      </div>
+      <div class="section-title-sm">Amenities</div>
+      <div class="tags-row">${r.amenities.map(a=>`<span class="tag">${a}</span>`).join("")}</div>
+      <div class="section-title-sm">Available Dates</div>
+      <div class="tags-row">${r.available.map(av=>`<span class="tag tag-green">${fmtRange(av.from,av.to)}</span>`).join("")}</div>
+      <div class="contact-box">
+        <div class="cb-title">Contact ${h.name.split(" ")[0]} Directly</div>
+        <div class="cb-line">📧&nbsp; ${h.contact.email}</div>
+        <div class="cb-line">📞&nbsp; ${h.contact.phone}</div>
+      </div>
+      <button class="btn-accent" id="btn-msg-listing" style="width:100%;padding:13px 0;font-size:15px;">Send a Message</button>
+    </div>`;
+  $("btn-msg-listing").addEventListener("click",()=>openMessaging(h.id));
+  showPage("listing");
+}
+$("listing-back").addEventListener("click",()=>showPage("community"));
+
+/* ─── CALENDAR ─── */
+function initCalendar(){
+  const now=new Date();
+  calY=now.getFullYear(); calM=now.getMonth();
+  buildCalHostPills(); renderCalendar(); renderDayPanel();
+}
+function buildCalHostPills(){
+  const c=$("cal-host-pills");
+  let h=`<button class="pill active" data-host="__all">All Hosts</button>`;
+  HOSTS.forEach(x=>h+=`<button class="pill" data-host="${x.id}">${x.name.split(" ")[0]}</button>`);
+  c.innerHTML=h;
+  c.querySelectorAll(".pill").forEach(pill=>pill.addEventListener("click",()=>{
+    c.querySelectorAll(".pill").forEach(p=>p.classList.remove("active"));
+    pill.classList.add("active");
+    calHostFilter=pill.dataset.host==="__all"?null:+pill.dataset.host;
+    calDay=null; renderCalendar(); renderDayPanel();
+  }));
+}
+function renderCalendar(){
+  const now=new Date(), days=daysIn(calY,calM), start=firstDay(calY,calM);
+  $("cal-month-label").textContent=MONTHS[calM]+" "+calY;
+  $("cal-dayheaders").innerHTML=DAYS.map(d=>`<div class="cal-dayheader">${d}</div>`).join("");
+  let html="";
+  for(let i=0;i<start;i++)html+=`<div class="cal-cell"></div>`;
+  for(let d=1;d<=days;d++){
+    const ha=availOnDay(d).length>0, sel=calDay===d;
+    const today=d===now.getDate()&&calM===now.getMonth()&&calY===now.getFullYear();
+    let cls="cal-cell";
+    if(ha) cls+=" has-avail";
+    if(sel) cls+=" selected";
+    if(today&&!sel) cls+=" today";
+    html+=`<div class="${cls}" data-day="${d}">${d}${ha&&!sel?'<div class="cal-dot"></div>':''}</div>`;
+  }
+  $("cal-grid").innerHTML=html;
+  $("cal-grid").querySelectorAll(".cal-cell.has-avail").forEach(cell=>
+    cell.addEventListener("click",()=>{calDay=+cell.dataset.day;renderCalendar();renderDayPanel();})
+  );
+}
+function renderDayPanel(){
+  const empty=$("day-panel-empty"), content=$("day-panel-content");
+  if(!calDay){empty.style.display="block";content.style.display="none";return;}
+  empty.style.display="none"; content.style.display="block";
+  const avail=availOnDay(calDay);
+  const ds=new Date(calY,calM,calDay).toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long"});
+  let html=`<div class="day-panel-date">${ds}</div><div class="day-panel-count">${avail.length} room${avail.length!==1?"s":""} available</div>`;
+  avail.forEach(({host,room})=>{
+    html+=`<div class="day-result" data-host="${host.id}" data-room="${room.id}">
+      <div class="dr-title">${room.title}</div>
+      <div class="dr-sub">${host.name} · ${host.location}</div>
+      <div class="dr-link">View listing →</div>
+    </div>`;
+  });
+  content.innerHTML=html;
+  content.querySelectorAll(".day-result").forEach(el=>el.addEventListener("click",()=>openListing(+el.dataset.host,+el.dataset.room)));
+}
+$("cal-prev").addEventListener("click",()=>{if(calM===0){calM=11;calY--;}else calM--;calDay=null;renderCalendar();renderDayPanel();});
+$("cal-next").addEventListener("click",()=>{if(calM===11){calM=0;calY++;}else calM++;calDay=null;renderCalendar();renderDayPanel();});
+
+/* ─── LIST ROOM ─── */
+function buildAmenityPills(){
+  const c=$("amenity-pills");
+  c.innerHTML=AMENITY_OPTIONS.map(a=>`<button class="amenity-pill" data-amenity="${a}">${a}</button>`).join("");
+  c.querySelectorAll(".amenity-pill").forEach(pill=>pill.addEventListener("click",()=>{
+    const a=pill.dataset.amenity;
+    if(selectedAmenities.includes(a)){
+      selectedAmenities=selectedAmenities.filter(x=>x!==a);
+      pill.classList.remove("on"); pill.textContent=a;
+    } else {
+      selectedAmenities.push(a);
+      pill.classList.add("on"); pill.textContent="✓ "+a;
+    }
+    validateForm();
+  }));
+}
+function validateForm(){
+  const ok=$("f-name").value.trim()&&$("f-location").value.trim()&&$("f-title").value.trim()&&$("f-from").value&&$("f-to").value;
+  $("btn-list-room").disabled=!ok;
+}
+["f-name","f-location","f-title","f-bio","f-from","f-to"].forEach(id=>$(id).addEventListener("input",validateForm));
+$("btn-list-room").addEventListener("click",()=>{
+  if($("btn-list-room").disabled)return;
+  $("listroom-form").style.display="none";
+  $("listroom-success").style.display="block";
+});
+$("success-back").addEventListener("click",()=>showPage("community"));
+
+/* ─── MESSAGING ─── */
+function openMessaging(hostId){
+  const host=HOSTS.find(h=>h.id===hostId); if(!host)return;
+  msgHostId=hostId;
+  $("msg-avatar").style.background=host.color;
+  $("msg-avatar").textContent=host.initials;
+  $("msg-name").textContent=host.name;
+  $("msg-loc").textContent=host.location;
+  renderMsgList();
+  $("msg-overlay").classList.add("open");
+  setTimeout(()=>$("msg-input").focus(),300);
+}
+function closeMsgModal(){ $("msg-overlay").classList.remove("open"); }
+function renderMsgList(){
+  const list=$("msg-list"), msgs=messages[msgHostId]||[];
+  if(!msgs.length){
+    const host=HOSTS.find(h=>h.id===msgHostId);
+    list.innerHTML=`<div class="msg-empty">Start a conversation with ${host.name.split(" ")[0]}</div>`;
+    return;
+  }
+  list.innerHTML=msgs.map(m=>{
+    const isYou=m.from==="You";
+    const time=new Date(m.time).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+    return`<div class="msg-bubble-wrap ${isYou?"you":""}"><div class="msg-bubble">${m.text}</div><div class="msg-time">${time}</div></div>`;
+  }).join("");
+  list.scrollTop=list.scrollHeight;
+}
+function sendMsg(){
+  const input=$("msg-input"), text=input.value.trim();
+  if(!text)return;
+  if(!messages[msgHostId])messages[msgHostId]=[];
+  messages[msgHostId].push({from:"You",text,time:new Date()});
+  input.value=""; renderMsgList();
+  setTimeout(()=>{
+    const host=HOSTS.find(h=>h.id===msgHostId);
+    messages[msgHostId].push({from:host.name.split(" ")[0],text:"Thanks! I'll get back to you shortly.",time:new Date()});
+    renderMsgList();
+  },1100);
+}
+$("msg-send").addEventListener("click",sendMsg);
+$("msg-input").addEventListener("keydown",e=>{if(e.key==="Enter")sendMsg();});
+$("msg-close").addEventListener("click",closeMsgModal);
+$("msg-overlay").addEventListener("click",e=>{if(e.target===e.currentTarget)closeMsgModal();});
+
+/* ─── INIT ─── */
+buildCommunityPills();
+renderCards();
+initCalendar();
+buildAmenityPills();
+
+})();
+</script>
+</body>
+</html>
